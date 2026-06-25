@@ -153,7 +153,7 @@ def erreurs(x: np.ndarray, u_num: np.ndarray, T: float) -> dict:
     e = u_num - u_ex
     return {
         "err_Linf": np.max(np.abs(e)),
-        "err_L2": np.sqrt(np.trapz(e**2, x)),
+        "err_L2": np.sqrt(_trapz(e**2, x)),
     }
 
 
