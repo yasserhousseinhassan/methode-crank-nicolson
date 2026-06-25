@@ -34,6 +34,13 @@ if hasattr(sys.stdout, "reconfigure"):
 # trapezoid (NumPy >= 2) avec repli sur trapz (versions antérieures)
 _trapz = getattr(np, "trapezoid", getattr(np, "trapz", None))
 
+# matplotlib optionnel (sauvegarde des figures en PNG)
+try:
+    import matplotlib.pyplot as plt
+    _HAS_PLT = True
+except ImportError:
+    _HAS_PLT = False
+
 
 # ---------------------------------------------------------------------------
 # Solution analytique de référence
@@ -158,6 +165,45 @@ def erreurs(x: np.ndarray, u_num: np.ndarray, T: float) -> dict:
 
 
 # ---------------------------------------------------------------------------
+# Visualisation : solutions comparées + courbe de convergence
+# ---------------------------------------------------------------------------
+def tracer_resultats(fichier="figure_crank_nicolson.png", nx=50, nt=1000, T=0.1):
+    if not _HAS_PLT:
+        print("  (matplotlib absent : graphique ignoré)")
+        return
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(13, 5))
+
+    # (a) Profil de température à l'instant final
+    x_fin = np.linspace(0, 1, 200)
+    ax1.plot(x_fin, solution_exacte(x_fin, T), "k-", lw=2, label="Solution exacte")
+    for nom, fonc, style in [("Explicite", schema_explicite, "o"),
+                             ("Implicite", schema_implicite, "s"),
+                             ("Crank-Nicolson", schema_crank_nicolson, "^")]:
+        x, u, _ = fonc(nx, nt, T)
+        ax1.plot(x[::3], u[::3], style, ms=5, alpha=0.8, label=nom)
+    ax1.set_title(f"Solution de l'équation de la chaleur (t = {T})")
+    ax1.set_xlabel("x"); ax1.set_ylabel("u(x, t)")
+    ax1.legend(); ax1.grid(alpha=0.3)
+
+    # (b) Convergence en norme L∞ (échelle log-log) — pente attendue ≈ 2
+    h, err = [], []
+    for nxi in [10, 20, 40, 80, 160]:
+        x, u, _ = schema_crank_nicolson(nxi, nxi**2, T)
+        h.append(1.0 / nxi)
+        err.append(erreurs(x, u, T)["err_Linf"])
+    h, err = np.array(h), np.array(err)
+    ax2.loglog(h, err, "o-", label="Crank-Nicolson")
+    ax2.loglog(h, err[0] * (h / h[0])**2, "k--", label="Pente 2 (référence)")
+    ax2.set_title("Convergence en norme $L^\\infty$")
+    ax2.set_xlabel("Pas d'espace $\\Delta x$"); ax2.set_ylabel("Erreur $L^\\infty$")
+    ax2.legend(); ax2.grid(alpha=0.3, which="both")
+
+    fig.tight_layout()
+    fig.savefig(fichier, dpi=130)
+    print(f"\n  Figure enregistrée : {fichier}")
+
+
+# ---------------------------------------------------------------------------
 # Démonstration comparative
 # ---------------------------------------------------------------------------
 def _demonstration():
@@ -190,6 +236,8 @@ def _demonstration():
         ordre = "" if err_prec is None else f"ordre ≈ {np.log2(err_prec / e):.2f}"
         print(f"  nx = {nx:3d} | erreur L∞ = {e:.3e}  {ordre}")
         err_prec = e
+
+    tracer_resultats()
 
 
 if __name__ == "__main__":

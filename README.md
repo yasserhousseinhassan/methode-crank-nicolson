@@ -132,7 +132,13 @@ pip install numpy scipy matplotlib
 python crank_nicolson.py
 ```
 
-Le script affiche, pour les trois schémas, le nombre de Fourier $r$, l'erreur $L^\infty$ et $L^2$ par rapport à la solution exacte, puis réalise une **étude de convergence** confirmant l'ordre 2 du schéma de Crank-Nicolson (l'erreur est divisée par ~4 lorsque $\Delta x$ est divisé par 2).
+Le script affiche, pour les trois schémas, le nombre de Fourier $r$, l'erreur $L^\infty$ et $L^2$ par rapport à la solution exacte, puis réalise une **étude de convergence** confirmant l'ordre 2 du schéma de Crank-Nicolson (l'erreur est divisée par ~4 lorsque $\Delta x$ est divisé par 2). Une figure récapitulative est enregistrée sous `figure_crank_nicolson.png`.
+
+### 4.5 Visualisation
+
+![Comparaison des schémas et convergence](figure_crank_nicolson.png)
+
+*À gauche :* profil de température à $t = 0{,}1$ — les trois schémas se superposent à la solution exacte. *À droite :* l'erreur $L^\infty$ en échelle log-log suit une pente 2, confirmant numériquement l'ordre de convergence théorique.
 
 ---
 
@@ -149,6 +155,7 @@ Le script affiche, pour les trois schémas, le nombre de Fourier $r$, l'erreur $
 | Fichier | Description |
 |---|---|
 | `crank_nicolson.py` | Implémentation Python des trois schémas + étude de convergence. |
+| `figure_crank_nicolson.png` | Figure générée : solutions comparées + courbe de convergence. |
 | `projet tutoré complet.pdf` | Mémoire complet (36 pages) : démonstrations, schémas, simulations 2D/3D Matlab. |
 | `README.md` | Le présent document. |
 
