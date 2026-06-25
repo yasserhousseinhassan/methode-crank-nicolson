@@ -1,50 +1,164 @@
-# La Méthode de Crank-Nicolson - Résolution de l'Équation de la Chaleur
+# La Méthode de Crank-Nicolson — Résolution Numérique de l'Équation de la Chaleur
 
-Ce projet tutoré a été réalisé dans le cadre d'une **Licence de Mathématiques Fondamentales** à l'**Université de Djibouti** (Faculté des Sciences). Il est consacré à l'étude théorique et à l'implémentation numérique de la **méthode de Crank-Nicolson** pour résoudre des équations aux dérivées partielles (EDP) paraboliques.
+> **Encadré par :** Dr. Souleiman Omar Hoch
+> **Réalisé par :** Mikael Ketema Tarekegn, Mohamed Goumaneh Houssein, **Yasser Houssein Hassan** & Youssouf Khaireh Omar
+> **Institution :** Université de Djibouti — Faculté des Sciences, Licence de Mathématiques Fondamentales
+> **Année universitaire :** 2021 / 2022
 
-## Informations Générales
-* **Encadré par** : Dr. Souleiman Omar Hoch
-* **Réalisés par** : Mikael Ketema Tarekegn, Mohamed Goumaneh Houssein, Yasser Houssein Hassan & Youssouf Khaireh Omar
-* **Année universitaire** : 2021/2022
+Ce projet tutoré est consacré à l'étude théorique et à l'implémentation numérique de la **méthode de Crank-Nicolson** (Crank & Nicolson, 1947) pour la résolution des équations aux dérivées partielles (EDP) paraboliques, illustrée sur l'équation de la chaleur monodimensionnelle.
 
 ---
 
-## Sommaire et Concepts Clés
+## 1. Cadre mathématique
 
-### 1. Classification des EDP Linéaires du Second Ordre
-* Définition générale et classification sous la forme $A u_{xx} + B u_{xy} + C u_{yy} + ... = G(x,y)$ :
-  * **EDP Hyperbolique** ($B^2 - 4AC > 0$) : ex. Équation des ondes.
-  * **EDP Parabolique** ($B^2 - 4AC = 0$) : ex. Équation de la chaleur/diffusion.
-  * **EDP Elliptique** ($B^2 - 4AC < 0$) : ex. Équation de Laplace / Poisson.
+### 1.1 Classification des EDP linéaires du second ordre
 
-### 2. Principes des Différences Finies (DF)
-* Discrétisation spatio-temporelle du domaine sur un maillage régulier.
-* Développement de Taylor pour approcher les dérivées partielles d'ordre 1 et 2.
-* Analyse mathématique des schémas numériques :
-  * **Erreur de troncature** et ordre du schéma.
-  * **Consistance** (l'approximation tend vers l'équation continue quand les pas tendent vers 0).
-  * **Stabilité** (norme $L^\infty$) : Schéma explicite (conditionnellement stable, $\Delta t \leq \frac{1}{2}\Delta x^2$) et schéma implicite (inconditionnellement stable).
-  * **Convergence** (Lax équivalence théorème : Consistance + Stabilité $\implies$ Convergence).
+Toute EDP linéaire du second ordre à deux variables s'écrit sous la forme générale :
 
-### 3. Schéma de Crank-Nicolson
-* Méthode de différences finies de type implicite introduite en 1947 par John Crank et Phyllis Nicolson.
-* Conçue comme la moyenne arithmétique des schémas explicite et implicite.
-* **Avantages** : Inconditionnellement stable en temps et en espace, précision d'ordre 2 en temps et en espace ($O(\Delta x^2 + \Delta t^2)$).
-* **Limitations** : Possibilité d'oscillations numériques si le pas en temps est trop grand par rapport au pas en espace.
+$$A\, u_{xx} + B\, u_{xy} + C\, u_{yy} + D\, u_x + E\, u_y + F\, u = G(x, y).$$
 
-### 4. Application Numérique & Implémentation Matlab
-Résolution de l'équation de la chaleur monodimensionnelle :
-$$\frac{\partial u}{\partial t} = \frac{\partial^2 u}{\partial x^2}$$
-* **Conditions aux limites** : Dirichlet homogènes ($u(0,t) = u(1,t) = 0$).
-* **Condition initiale** : $u(x,0) = \sin(\pi x)$.
-* **Solution analytique exacte** : $u(x,t) = e^{-\pi^2 t}\sin(\pi x)$.
-* **Programmation Matlab** : Codes sources inclus dans le rapport pour :
-  * Calcul de la solution analytique exacte.
-  * Résolution par schéma explicite, implicite, et Crank-Nicolson (résolution de système tridiagonal).
-  * Comparaison graphique et numérique démontrant la supériorité de Crank-Nicolson en termes de précision.
+Sa nature est déterminée par le **discriminant** $\Delta = B^2 - 4AC$ :
 
-## Fichier du Projet
-* `projet tutoré complet.pdf` : Le document complet du mémoire (36 pages) avec toutes les démonstrations mathématiques et les résultats de simulation 2D et 3D sous Matlab.
+| Type | Condition | Exemple canonique | Phénomène physique |
+|---|---|---|---|
+| **Hyperbolique** | $B^2 - 4AC > 0$ | $u_{tt} = c^2 u_{xx}$ | Propagation d'ondes |
+| **Parabolique** | $B^2 - 4AC = 0$ | $u_t = \alpha\, u_{xx}$ | Diffusion / chaleur |
+| **Elliptique** | $B^2 - 4AC < 0$ | $u_{xx} + u_{yy} = 0$ | Équilibre / potentiel |
+
+### 1.2 Problème de référence
+
+On considère le problème de Dirichlet pour l'équation de la chaleur normalisée :
+
+$$\frac{\partial u}{\partial t} = \frac{\partial^2 u}{\partial x^2}, \qquad x \in (0,1),\ t > 0,$$
+
+$$u(0,t) = u(1,t) = 0 \quad \text{(Dirichlet homogène)}, \qquad u(x,0) = \sin(\pi x).$$
+
+La **solution analytique exacte**, obtenue par séparation de variables, sert de référence pour évaluer la précision des schémas :
+
+$$\boxed{\,u(x,t) = e^{-\pi^2 t}\,\sin(\pi x)\,}$$
+
+---
+
+## 2. Schémas aux différences finies
+
+On discrétise le domaine sur un maillage régulier $x_i = i\,\Delta x$ ($i = 0,\dots,N_x$) et $t_n = n\,\Delta t$. On note $u_i^n \approx u(x_i, t_n)$ et le **nombre de Fourier** :
+
+$$r = \frac{\Delta t}{\Delta x^2}.$$
+
+### 2.1 Schéma explicite (Euler progressif)
+
+$$u_i^{n+1} = u_i^n + r\left(u_{i+1}^n - 2u_i^n + u_{i-1}^n\right).$$
+
+Précision $O(\Delta t + \Delta x^2)$, **conditionnellement stable** : $r \leq \tfrac{1}{2}$ (condition CFL parabolique).
+
+### 2.2 Schéma implicite (Euler rétrograde)
+
+$$-r\,u_{i-1}^{n+1} + (1+2r)\,u_i^{n+1} - r\,u_{i+1}^{n+1} = u_i^n.$$
+
+**Inconditionnellement stable**, mais requiert la résolution d'un système tridiagonal à chaque pas.
+
+### 2.3 Schéma de Crank-Nicolson
+
+Moyenne arithmétique (θ = ½) des schémas explicite et implicite, centrée en $t_{n+1/2}$ :
+
+$$-\frac{r}{2}u_{i-1}^{n+1} + (1+r)\,u_i^{n+1} - \frac{r}{2}u_{i+1}^{n+1} = \frac{r}{2}u_{i-1}^{n} + (1-r)\,u_i^{n} + \frac{r}{2}u_{i+1}^{n}.$$
+
+| Propriété | Crank-Nicolson |
+|---|---|
+| Précision | $O(\Delta t^2 + \Delta x^2)$ |
+| Stabilité | Inconditionnelle (tout $r > 0$) |
+| Structure linéaire | Système **tridiagonal** (algorithme de Thomas, $O(N)$) |
+| Limitation | Oscillations possibles si $\Delta t \gg \Delta x$ |
+
+---
+
+## 3. Analyse numérique des schémas
+
+La qualité d'un schéma se juge selon trois propriétés liées par le **théorème d'équivalence de Lax** :
+
+$$\text{Consistance} + \text{Stabilité} \;\Longleftrightarrow\; \text{Convergence}.$$
+
+- **Consistance** : l'erreur de troncature locale tend vers 0 quand $\Delta x, \Delta t \to 0$ (développement de Taylor).
+- **Stabilité** (norme $L^\infty$ ou analyse de von Neumann) : les erreurs ne s'amplifient pas au cours du temps.
+- **Convergence** : la solution numérique tend vers la solution exacte.
+
+---
+
+## 4. Présentation du code Python
+
+L'implémentation de référence (historiquement en Matlab dans le rapport) est portée en **Python** dans **`crank_nicolson.py`**, qui résout le système tridiagonal via `scipy.linalg.solve_banded` (équivalent vectorisé de l'algorithme de Thomas).
+
+### 4.1 Cœur du schéma de Crank-Nicolson
+
+```python
+import numpy as np
+from scipy.linalg import solve_banded
+
+def schema_crank_nicolson(nx, nt, T=0.1):
+    dx, dt = 1.0 / nx, T / nt
+    r = dt / dx**2
+    x = np.linspace(0, 1, nx + 1)
+    u = np.sin(np.pi * x)              # condition initiale
+
+    m = nx - 1                          # inconnues internes
+    diag = (1 + r) * np.ones(m)
+    sub  = -r / 2 * np.ones(m)
+    sup  = -r / 2 * np.ones(m)
+
+    for _ in range(nt):
+        ui = u[1:-1]
+        b = (1 - r) * ui                # partie explicite (second membre)
+        b[1:]  += r / 2 * ui[:-1]
+        b[:-1] += r / 2 * ui[1:]
+        u[1:-1] = _resoudre_tridiagonal(sub, diag, sup, b)
+        u[0] = u[-1] = 0.0              # Dirichlet homogène
+    return x, u, r
+```
+
+### 4.2 Mesure de l'erreur et ordre de convergence
+
+```python
+def erreurs(x, u_num, T):
+    u_ex = np.exp(-np.pi**2 * T) * np.sin(np.pi * x)
+    e = u_num - u_ex
+    return {"err_Linf": np.max(np.abs(e)),
+            "err_L2": np.sqrt(np.trapz(e**2, x))}
+```
+
+### 4.3 Exécution
+
+```bash
+pip install numpy scipy matplotlib
+python crank_nicolson.py
+```
+
+Le script affiche, pour les trois schémas, le nombre de Fourier $r$, l'erreur $L^\infty$ et $L^2$ par rapport à la solution exacte, puis réalise une **étude de convergence** confirmant l'ordre 2 du schéma de Crank-Nicolson (l'erreur est divisée par ~4 lorsque $\Delta x$ est divisé par 2).
+
+---
+
+## 5. Résultats et conclusion
+
+1. Le schéma **explicite** diverge dès que $r > \tfrac{1}{2}$, illustrant concrètement la contrainte CFL.
+2. Le schéma **implicite** reste stable mais n'est que d'ordre 1 en temps.
+3. Le schéma de **Crank-Nicolson** atteint l'ordre 2 en temps et en espace tout en restant inconditionnellement stable : c'est le meilleur compromis précision/stabilité, ce que confirme numériquement l'étude de convergence ($\text{ordre} \approx 2$).
+
+---
+
+## 6. Structure du dépôt
+
+| Fichier | Description |
+|---|---|
+| `crank_nicolson.py` | Implémentation Python des trois schémas + étude de convergence. |
+| `projet tutoré complet.pdf` | Mémoire complet (36 pages) : démonstrations, schémas, simulations 2D/3D Matlab. |
+| `README.md` | Le présent document. |
+
+---
+
+## Références
+
+- Crank, J. & Nicolson, P. (1947). *A practical method for numerical evaluation of solutions of partial differential equations of the heat-conduction type*. Proc. Cambridge Phil. Soc.
+- Lax, P. & Richtmyer, R. (1956). *Survey of the stability of linear finite difference equations*.
+- LeVeque, R. J. (2007). *Finite Difference Methods for Ordinary and Partial Differential Equations*. SIAM.
 
 ---
 *Université de Djibouti*
