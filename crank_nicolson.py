@@ -23,8 +23,16 @@ Dépendances : numpy, scipy, matplotlib
 ============================================================================
 """
 
+import sys
 import numpy as np
 from scipy.linalg import solve_banded
+
+# Sortie console en UTF-8 (symboles mathématiques : π, σ, ∞, Δ...)
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+
+# trapezoid (NumPy >= 2) avec repli sur trapz (versions antérieures)
+_trapz = getattr(np, "trapezoid", getattr(np, "trapz", None))
 
 
 # ---------------------------------------------------------------------------
